@@ -1,27 +1,28 @@
 #!/bin/bash
 
 # Set database config from Dokku's DATABASE_URL
-# Idea from https://github.com/cowofevil/keycloak-dokku/blob/master/docker-entrypoint.sh
-# Parameters documented at https://www.keycloak.org/server/all-config?q=db
-if [ "$DATABASE_URL" != "" ]; 
-then
+if [ "$DATABASE_URL" != "" ]; then
     echo "[INFO] Found database configuration in DATABASE_URL=$DATABASE_URL"
 
+    # Regex to extract components from DATABASE_URL (postgres://username:password@host:port/database)
     regex='^postgres://([a-zA-Z0-9_-]+):([a-zA-Z0-9]+)@([a-z0-9.-]+):([[:digit:]]+)/([a-zA-Z0-9_-]+)$'
-    if [[ $DATABASE_URL =~ $regex ]]; 
-    then
-        export KC_DB_USERNAME=${BASH_REMATCH[1]}
-        export KC_DB_PASSWORD=${BASH_REMATCH[2]}
-        export KC_DB_URL="jdbc:postgresql://${BASH_REMATCH[3]}:${BASH_REMATCH[4]}/${BASH_REMATCH[5]}?currentSchema=${KEYCLOAK_DB_SCHEMA}"
-
-        echo "[INFO] KC_DB_URL_HOST=$KC_DB_URL_HOST, KC_DB_URL_PORT=$KC_DB_URL_PORT, KC_DB_URL_DATABASE=$KC_DB_URL_DATABASE, KC_DB_USERNAME=$KC_DB_USERNAME, KC_DB_PASSWORD=$KC_DB_PASSWORD"
+    if [[ $DATABASE_URL =~ $regex ]]; then
+        # Extract the missing parts from DATABASE_URL
+        db_host=${BASH_REMATCH[3]}
+        db_port=${BASH_REMATCH[4]}
+        db_name=${BASH_REMATCH[5]}
         
-        export KC_DB=postgres
-        export KC_PROXY=edge # Nginx manages SSL. No encryption between keycloak and nginx.
+        # Construct KC_DB_URL
+        export KC_DB_URL="jdbc:postgresql://$db_host:$db_port/$db_name?currentSchema=${KEYCLOAK_DB_SCHEMA}"
+        
+        echo "[INFO] KC_DB_URL=$KC_DB_URL"
+    else
+        echo "[ERROR] Could not parse DATABASE_URL"
+        exit 1
     fi
-
 else
     echo "[ERROR] Could not find database configuration in DATABASE_URL variable. Did you properly setup and link postgres?"
+    exit 1
 fi
 
 # Simply continue with the original entrypoint script
