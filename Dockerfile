@@ -7,7 +7,11 @@ RUN /opt/keycloak/bin/kc.sh build
 FROM quay.io/keycloak/keycloak:26.0.0
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 
-COPY dokku-kc.sh /opt/keycloak/bin
+# Copy the script to a different directory where we have permission
+COPY dokku-kc.sh /usr/local/bin/
 
-RUN chmod +x /opt/keycloak/bin/dokku-kc.sh
-ENTRYPOINT ["/opt/keycloak/bin/dokku-kc.sh"]
+# Ensure the script is executable
+RUN chmod +x /usr/local/bin/dokku-kc.sh
+
+# Set ENTRYPOINT to use the customized script
+ENTRYPOINT ["/usr/local/bin/dokku-kc.sh"]
