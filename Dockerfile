@@ -9,4 +9,5 @@ COPY --from=builder /opt/keycloak/ /opt/keycloak/
 
 COPY dokku-kc.sh /opt/keycloak/bin
 
+RUN chmod +x /opt/keycloak/bin/dokku-kc.sh
 ENTRYPOINT ["/opt/keycloak/bin/dokku-kc.sh"]
